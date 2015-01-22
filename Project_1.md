@@ -1,6 +1,6 @@
 Statistical Inference Project 1
 ===============================
-```EricRybicki```
+by ```EricRybicki```
 
 ## A Simulation Excercise
 
