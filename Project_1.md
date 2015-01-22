@@ -1,6 +1,3 @@
----
-output: html_document
----
 Statistical Inference Project 1
 ===============================
 ```EricRybicki```
