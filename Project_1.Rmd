@@ -1,0 +1,113 @@
+---
+output: html_document
+---
+Statistical Inference Project 1
+===============================
+```EricRybicki```
+
+## A Simulation Excercise
+
+The exponential distribution can be simulated in R with ```rexp(n, lambda)```  where ```lambda``` is the rate parameter. The mean of exponential distribution is ```1/lambda``` and the standard deviation is also ```1/lambda```. For this simulation we will investigate the distribution of averages of 40 exponentials over a thousand observations, assuming the ```lambda = 0.2```
+
+### Simulations
+We start by doing a thousand simulated averages of 40 exponentials.
+```{r}
+      lambda <- 0.2
+           n <- 1000
+      s.size <- 40
+  simulation <- matrix(rexp(n*s.size, rate=lambda), n, s.size)
+sample.means <- rowMeans(simulation) 
+```
+
+### Sample Mean versus Theoretical Mean
+We find that the sample mean is centered at `r round(mean(sample.means), 3)` which is very close to the theoretical mean of `r 1/lambda `.
+```{r, warning=FALSE, echo=FALSE}
+df <- data.frame(sample.means)      # Set as data frame for ggplot purposes
+library(ggplot2)
+g <- ggplot(df, aes(sample.means)) 
+g <- g + geom_histogram(binwidth = 0.13, fill = "white", colour = "firebrick", aes(y = ..density..)) 
+g <- g + stat_function(geom="line", fun=dnorm, arg=list(mean=mean(sample.means), sd=sd(sample.means)), size = 1.25)
+g <- g + geom_density(colour = "seagreen", size = 1.25) + theme_bw() + xlab("")
+g <- g + geom_vline(xintercept = mean(sample.means), colour = "seagreen", size = 1.25)
+g <- g + annotate("text", x = 7.15, y = 0.55, label = "—Sample     ", colour = " seagreen", size = 7)
+g <- g + annotate("text", x = 7.15, y = 0.5, label = "—Theoretical", size = 7)
+g <- g + ggtitle("Distribution of 1000 means of 40 random exponentials")
+g
+```
+
+```{r}
+round(mean(sample.means), 3)
+1/lambda
+```
+
+### Sample Variance versus Theoretical Variance
+
+We find the standard deviation of our sample
+```{r}
+sd(sample.means)
+```
+
+And our predicted standard deviation
+```{r}
+(1/lambda)/sqrt(s.size)
+```
+
+Next we can find the variance of our sample mean
+```{r}
+var(sample.means)
+```
+Then we can find the theoretical variance of our distribution.
+```{r}
+((1/lambda)^2)/s.size
+```
+This show us that our distribution of sample means, which is centered around the population mean of `r round(mean(sample.means, 3))`, has a variance of `r round(var(sample.means), 3)` which is in accord with the theoretical variance of `r ((1/lambda)^2)/s.size` as predicted by the Central Limit Theorem. 
+
+### Distribution
+
+The Q-Q plot below shows two probability distributions where any point ``` (X,Y)``` denotes a data point from our sample distribution plotted against our theoretical distribution. The linearity suggests that normality is a good approximation.
+
+```{r, echo = FALSE}
+    gg_qq <- function(x, distribution = "norm", ..., line.estimate = NULL, conf = 0.95,
+                      labels = names(x)){
+        q.function <- eval(parse(text = paste0("q", distribution)))
+        d.function <- eval(parse(text = paste0("d", distribution)))
+        x <- na.omit(x)
+        ord <- order(x)
+        n <- length(x)
+        P <- ppoints(length(x))
+        df <- data.frame(ord.x = x[ord], z = q.function(P, ...))
+        
+        if(is.null(line.estimate)){
+            Q.x <- quantile(df$ord.x, c(0.25, 0.75))
+            Q.z <- q.function(c(0.25, 0.75), ...)
+            b <- diff(Q.x)/diff(Q.z)
+            coef <- c(Q.x[1] - b * Q.z[1], b)
+        } else {
+            coef <- coef(line.estimate(ord.x ~ z))
+        }
+        
+        zz <- qnorm(1 - (1 - conf)/2)
+        SE <- (coef[2]/d.function(df$z)) * sqrt(P * (1 - P)/n)
+        fit.value <- coef[1] + coef[2] * df$z
+        df$upper <- fit.value + zz * SE
+        df$lower <- fit.value - zz * SE
+        
+        if(!is.null(labels)){ 
+            df$label <- ifelse(df$ord.x > df$upper | df$ord.x < df$lower, labels[ord],"")
+        }
+        
+        p <- ggplot(df, aes(x=z, y=ord.x)) +
+            geom_point(colour = "seagreen", size = 7, shape = 1) + theme_bw() +
+            geom_abline(intercept = coef[1], slope = coef[2], colour = "firebrick", size = 2) +
+            geom_ribbon(aes(ymin = lower, ymax = upper), alpha=0.2) +
+            xlab("Theoretical") + ylab("Sample")
+        if(!is.null(labels)) p <- p + geom_text( aes(label = label))
+        print(p)
+        #coef
+    }
+```
+
+```{r}
+gg_qq(sample.means)
+```
+
